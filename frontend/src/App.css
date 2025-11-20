@@ -1,0 +1,9 @@
+:root {
+  color: #0f172a;
+  background-color: #f8fafc;
+}
+
+.pattern-grid {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+  background-size: 30px 30px;
+}

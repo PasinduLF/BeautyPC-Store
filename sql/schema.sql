@@ -1,0 +1,63 @@
+CREATE DATABASE IF NOT EXISTS beauty_pc_store CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE beauty_pc_store;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('admin') DEFAULT 'admin',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL UNIQUE,
+  description VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS products (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  category_id INT NOT NULL,
+  name VARCHAR(200) NOT NULL,
+  description TEXT,
+  subcategory VARCHAR(120),
+  usage_notes VARCHAR(255),
+  price DECIMAL(10,2) NOT NULL DEFAULT 0,
+  stock_quantity INT NOT NULL DEFAULT 0,
+  image_url VARCHAR(255),
+  gallery_images TEXT,
+  is_featured TINYINT(1) DEFAULT 0,
+  is_new TINYINT(1) DEFAULT 0,
+  is_best_seller TINYINT(1) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  customer_name VARCHAR(150) NOT NULL,
+  phone VARCHAR(60) NOT NULL,
+  email VARCHAR(150),
+  address TEXT NOT NULL,
+  city VARCHAR(120) NOT NULL,
+  payment_method VARCHAR(40) NOT NULL,
+  delivery_charge DECIMAL(10,2) DEFAULT 0,
+  subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
+  status ENUM('New','Processing','Shipped','Completed','Cancelled') DEFAULT 'New',
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  order_id INT NOT NULL,
+  product_id INT NOT NULL,
+  quantity INT NOT NULL DEFAULT 1,
+  unit_price DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
