@@ -70,3 +70,4 @@ export const getCategoryMeta = (slug) =>
 
 export const getSubcategories = (slug) => getCategoryMeta(slug)?.subcategories || [];
 
+

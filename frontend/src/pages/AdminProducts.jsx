@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../services/productService';
 import {
@@ -7,11 +7,18 @@ import {
   updateCategory,
   deleteCategory,
 } from '../services/categoryService';
+import {
+  fetchSubcategories,
+  createSubcategory,
+  updateSubcategory,
+  deleteSubcategory,
+} from '../services/subcategoryService';
 
 const emptyProduct = {
   name: '',
   description: '',
   subcategory: '',
+  subcategory_id: '',
   usage_notes: '',
   price: '',
   stock_quantity: '',
@@ -26,27 +33,48 @@ const emptyProduct = {
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
   const [form, setForm] = useState(emptyProduct);
   const [editingId, setEditingId] = useState(null);
   const [status, setStatus] = useState('');
   const [categoryForm, setCategoryForm] = useState({ name: '', description: '' });
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [categoryStatus, setCategoryStatus] = useState('');
+  const [subcategoryForm, setSubcategoryForm] = useState({ category_id: '', name: '' });
+  const [editingSubcategoryId, setEditingSubcategoryId] = useState(null);
+  const [subcategoryStatus, setSubcategoryStatus] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
-      const [productsRes, categoriesRes] = await Promise.all([fetchProducts(), fetchCategories()]);
+      const [productsRes, categoriesRes, subcategoriesRes] = await Promise.all([
+        fetchProducts(),
+        fetchCategories(),
+        fetchSubcategories(),
+      ]);
       setProducts(productsRes.data);
       setCategories(categoriesRes.data);
+      setSubcategories(subcategoriesRes.data);
     };
     loadData();
   }, []);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
+
+    if (name === 'subcategory_id') {
+      const selected = subcategories.find((subcategory) => subcategory.id === Number(value));
+      setForm((prev) => ({
+        ...prev,
+        subcategory_id: value,
+        subcategory: selected ? selected.name : '',
+      }));
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
+      ...(name === 'category_id' ? { subcategory_id: '', subcategory: '' } : {}),
     }));
   };
 
@@ -89,6 +117,44 @@ const AdminProducts = () => {
     setCategories((prev) => prev.filter((category) => category.id !== id));
   };
 
+  const handleSubcategoryChange = (event) => {
+    const { name, value } = event.target;
+    setSubcategoryForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const resetSubcategoryForm = () => {
+    setSubcategoryForm({ category_id: '', name: '' });
+    setEditingSubcategoryId(null);
+  };
+
+  const handleSubcategorySubmit = async (event) => {
+    event.preventDefault();
+    if (!subcategoryForm.category_id || !subcategoryForm.name.trim()) {
+      setSubcategoryStatus('Category and name are required.');
+      return;
+    }
+    try {
+      if (editingSubcategoryId) {
+        await updateSubcategory(editingSubcategoryId, subcategoryForm);
+        setSubcategoryStatus('Subcategory updated.');
+      } else {
+        await createSubcategory(subcategoryForm);
+        setSubcategoryStatus('Subcategory created.');
+      }
+      const refreshed = await fetchSubcategories();
+      setSubcategories(refreshed.data);
+      resetSubcategoryForm();
+    } catch (error) {
+      setSubcategoryStatus(error.response?.data?.message || 'Failed to save subcategory');
+    }
+  };
+
+  const handleSubcategoryDelete = async (id) => {
+    if (!window.confirm('Delete this subcategory?')) return;
+    await deleteSubcategory(id);
+    setSubcategories((prev) => prev.filter((subcategory) => subcategory.id !== id));
+  };
+
   const formatGalleryInput = (gallery) =>
     Array.isArray(gallery) ? gallery.join('\n') : gallery || '';
 
@@ -97,6 +163,7 @@ const AdminProducts = () => {
       name: product.name,
       description: product.description,
       subcategory: product.subcategory || '',
+      subcategory_id: product.subcategory_id ? String(product.subcategory_id) : '',
       usage_notes: product.usage_notes || '',
       price: product.price,
       stock_quantity: product.stock_quantity,
@@ -118,6 +185,7 @@ const AdminProducts = () => {
         price: Number(form.price),
         stock_quantity: Number(form.stock_quantity),
         category_id: Number(form.category_id),
+        subcategory_id: form.subcategory_id ? Number(form.subcategory_id) : null,
         gallery_images: form.gallery_images
           ? form.gallery_images
               .split('\n')
@@ -145,6 +213,21 @@ const AdminProducts = () => {
     await deleteProduct(id);
     setProducts((prev) => prev.filter((product) => product.id !== id));
   };
+
+  const categoryLookup = useMemo(() => {
+    const lookup = {};
+    categories.forEach((category) => {
+      lookup[category.id] = category.name;
+    });
+    return lookup;
+  }, [categories]);
+
+  const subcategoriesForSelectedCategory = useMemo(() => {
+    if (!form.category_id) return [];
+    return subcategories.filter(
+      (subcategory) => subcategory.category_id === Number(form.category_id)
+    );
+  }, [form.category_id, subcategories]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
@@ -182,6 +265,20 @@ const AdminProducts = () => {
                 </option>
               ))}
             </select>
+            <select
+              name="subcategory_id"
+              value={form.subcategory_id}
+              onChange={handleChange}
+              className="rounded-2xl border border-slate-200 px-4 py-2"
+              disabled={!form.category_id || subcategoriesForSelectedCategory.length === 0}
+            >
+              <option value="">Select subcategory</option>
+              {subcategoriesForSelectedCategory.map((subcategory) => (
+                <option key={subcategory.id} value={subcategory.id}>
+                  {subcategory.name}
+                </option>
+              ))}
+            </select>
             <input
               name="price"
               type="number"
@@ -200,10 +297,10 @@ const AdminProducts = () => {
             />
             <input
               name="subcategory"
-              placeholder="Subcategory (e.g. Lipstick)"
+              placeholder="Subcategory (auto-filled)"
               value={form.subcategory}
-              onChange={handleChange}
-              className="rounded-2xl border border-slate-200 px-4 py-2"
+              readOnly
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-slate-500"
             />
             <input
               name="usage_notes"
@@ -362,6 +459,72 @@ const AdminProducts = () => {
                     Edit
                   </button>
                   <button className="text-rose-500" onClick={() => handleCategoryDelete(category.id)}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-6">
+          <div className="flex items-center justify-between">
+            <p className="text-lg font-semibold text-slate-900">Subcategories</p>
+            {editingSubcategoryId && (
+              <button className="text-xs text-slate-500 underline" onClick={resetSubcategoryForm}>
+                Cancel edit
+              </button>
+            )}
+          </div>
+          <form onSubmit={handleSubcategorySubmit} className="mt-4 grid gap-4 md:grid-cols-3">
+            <select
+              name="category_id"
+              value={subcategoryForm.category_id}
+              onChange={handleSubcategoryChange}
+              className="rounded-2xl border border-slate-200 px-4 py-2"
+            >
+              <option value="">Select category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            <input
+              name="name"
+              value={subcategoryForm.name}
+              onChange={handleSubcategoryChange}
+              placeholder="Subcategory name"
+              className="rounded-2xl border border-slate-200 px-4 py-2"
+            />
+            {subcategoryStatus && <p className="text-sm text-brand-dark">{subcategoryStatus}</p>}
+            <button type="submit" className="rounded-full bg-slate-900 px-4 py-2 text-white">
+              {editingSubcategoryId ? 'Update subcategory' : 'Add subcategory'}
+            </button>
+          </form>
+          <div className="mt-4 divide-y divide-slate-100">
+            {subcategories.map((subcategory) => (
+              <div key={subcategory.id} className="flex items-center justify-between py-3 text-sm">
+                <div>
+                  <p className="font-semibold text-slate-900">{subcategory.name}</p>
+                  <p className="text-xs uppercase tracking-widest text-slate-400">
+                    {categoryLookup[subcategory.category_id] || '—'}
+                  </p>
+                </div>
+                <div className="flex gap-2 text-xs">
+                  <button
+                    className="text-brand-dark"
+                    onClick={() => {
+                      setSubcategoryForm({
+                        category_id: String(subcategory.category_id),
+                        name: subcategory.name,
+                      });
+                      setEditingSubcategoryId(subcategory.id);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button className="text-rose-500" onClick={() => handleSubcategoryDelete(subcategory.id)}>
                     Delete
                   </button>
                 </div>

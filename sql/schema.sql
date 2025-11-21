@@ -17,9 +17,19 @@ CREATE TABLE IF NOT EXISTS categories (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS subcategories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  category_id INT NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_category_subcategory (category_id, name)
+);
+
 CREATE TABLE IF NOT EXISTS products (
   id INT AUTO_INCREMENT PRIMARY KEY,
   category_id INT NOT NULL,
+  subcategory_id INT,
   name VARCHAR(200) NOT NULL,
   description TEXT,
   subcategory VARCHAR(120),
@@ -32,7 +42,8 @@ CREATE TABLE IF NOT EXISTS products (
   is_new TINYINT(1) DEFAULT 0,
   is_best_seller TINYINT(1) DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+  FOREIGN KEY (subcategory_id) REFERENCES subcategories(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS orders (

@@ -14,6 +14,7 @@ const productValidators = [
   body('stock_quantity').isInt({ min: 0 }).withMessage('Stock must be 0 or more'),
   body('category_id').isInt().withMessage('Category is required'),
   body('subcategory').optional({ checkFalsy: true }).isLength({ max: 120 }).withMessage('Subcategory must be under 120 characters'),
+  body('subcategory_id').optional({ checkFalsy: true }).isInt().withMessage('Subcategory must be valid'),
   body('usage_notes').optional({ checkFalsy: true }).isLength({ max: 255 }).withMessage('Usage notes too long'),
   body('image_url').optional({ checkFalsy: true }).isURL().withMessage('Image URL must be valid'),
   body('gallery_images')

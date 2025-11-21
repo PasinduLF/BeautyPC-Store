@@ -12,8 +12,45 @@ INSERT INTO categories (name, description) VALUES
   ('Beauty Tools', 'Brush sets, sponges, pouches, mirrors')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Lipstick' FROM categories c WHERE c.name = 'Makeup'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Foundation' FROM categories c WHERE c.name = 'Makeup'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Mascara' FROM categories c WHERE c.name = 'Makeup'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Serum' FROM categories c WHERE c.name = 'Skincare'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Moisturizer' FROM categories c WHERE c.name = 'Skincare'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Cleanser' FROM categories c WHERE c.name = 'Skincare'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Perfume' FROM categories c WHERE c.name = 'Fragrances'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Body Spray' FROM categories c WHERE c.name = 'Fragrances'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Hair Oil' FROM categories c WHERE c.name = 'Hair Care'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Shampoo' FROM categories c WHERE c.name = 'Hair Care'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Brush Set' FROM categories c WHERE c.name = 'Beauty Tools'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO subcategories (category_id, name)
+SELECT c.id, 'Makeup Sponge' FROM categories c WHERE c.name = 'Beauty Tools'
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
 INSERT INTO products
-  (name, description, subcategory, usage_notes, price, stock_quantity, category_id, image_url, gallery_images, is_featured, is_new, is_best_seller)
+  (name, description, subcategory, usage_notes, price, stock_quantity, category_id, subcategory_id, image_url, gallery_images, is_featured, is_new, is_best_seller)
 VALUES
   (
     'Luminous Silk Lipstick',
@@ -23,9 +60,11 @@ VALUES
     3200,
     30,
     1,
+    (SELECT id FROM subcategories WHERE name = 'Lipstick' AND category_id = (SELECT id FROM categories WHERE name = 'Makeup') LIMIT 1),
     'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f',
     '["https://images.unsplash.com/photo-1487412720507-e7ab37603c6f","https://images.unsplash.com/photo-1526045478516-99145907023c"]',
     1,
+    (SELECT id FROM subcategories WHERE name = 'Foundation' AND category_id = (SELECT id FROM categories WHERE name = 'Makeup') LIMIT 1),
     1,
     1
   ),
@@ -51,6 +90,7 @@ VALUES
     5200,
     40,
     2,
+    (SELECT id FROM subcategories WHERE name = 'Serum' AND category_id = (SELECT id FROM categories WHERE name = 'Skincare') LIMIT 1),
     'https://images.unsplash.com/photo-1509042239860-f550ce710b93',
     '["https://images.unsplash.com/photo-1509042239860-f550ce710b93","https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9"]',
     1,
@@ -65,6 +105,7 @@ VALUES
     6100,
     22,
     2,
+    NULL,
     'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9',
     '["https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9"]',
     0,
@@ -79,6 +120,7 @@ VALUES
     7800,
     15,
     3,
+    (SELECT id FROM subcategories WHERE name = 'Perfume' AND category_id = (SELECT id FROM categories WHERE name = 'Fragrances') LIMIT 1),
     'https://images.unsplash.com/photo-1509057199576-632a47484ece',
     '["https://images.unsplash.com/photo-1509057199576-632a47484ece","https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?fragrance"]',
     1,
@@ -93,6 +135,7 @@ VALUES
     2600,
     50,
     3,
+    (SELECT id FROM subcategories WHERE name = 'Body Spray' AND category_id = (SELECT id FROM categories WHERE name = 'Fragrances') LIMIT 1),
     'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?body',
     '["https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?body"]',
     0,
@@ -107,6 +150,7 @@ VALUES
     3800,
     45,
     4,
+    (SELECT id FROM subcategories WHERE name = 'Hair Oil' AND category_id = (SELECT id FROM categories WHERE name = 'Hair Care') LIMIT 1),
     'https://images.unsplash.com/photo-1524504388940-b1c1722653e1',
     '["https://images.unsplash.com/photo-1524504388940-b1c1722653e1","https://images.unsplash.com/photo-1509042239860-f550ce710b93?hair"]',
     1,
@@ -121,6 +165,7 @@ VALUES
     3200,
     35,
     4,
+    (SELECT id FROM subcategories WHERE name = 'Shampoo' AND category_id = (SELECT id FROM categories WHERE name = 'Hair Care') LIMIT 1),
     'https://images.unsplash.com/photo-1519681393784-d120267933ba',
     '["https://images.unsplash.com/photo-1519681393784-d120267933ba"]',
     0,
@@ -135,6 +180,7 @@ VALUES
     5400,
     28,
     5,
+    (SELECT id FROM subcategories WHERE name = 'Brush Set' AND category_id = (SELECT id FROM categories WHERE name = 'Beauty Tools') LIMIT 1),
     'https://images.unsplash.com/photo-1526045478516-99145907023c',
     '["https://images.unsplash.com/photo-1526045478516-99145907023c"]',
     1,
@@ -149,6 +195,7 @@ VALUES
     2400,
     60,
     5,
+    (SELECT id FROM subcategories WHERE name = 'Makeup Sponge' AND category_id = (SELECT id FROM categories WHERE name = 'Beauty Tools') LIMIT 1),
     'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?tools',
     '["https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?tools"]',
     0,

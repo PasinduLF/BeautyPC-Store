@@ -2,6 +2,7 @@ const pool = require('../config/db');
 
 const buildFilterQuery = ({
   categoryId,
+  subcategoryId,
   subCategory,
   minPrice,
   maxPrice,
@@ -15,6 +16,14 @@ const buildFilterQuery = ({
   if (categoryId) {
     conditions.push('category_id = ?');
     params.push(categoryId);
+  }
+
+  if (subcategoryId) {
+    conditions.push('subcategory_id = ?');
+    params.push(subcategoryId);
+  } else if (subCategory) {
+    conditions.push('LOWER(subcategory) = ?');
+    params.push(subCategory.toLowerCase());
   }
 
   if (subCategory) {
@@ -84,6 +93,9 @@ const serializeGallery = (value) => {
 
 const mapProductRow = (row) => ({
   ...row,
+  subcategory_id: row.subcategory_id,
+  subcategory_name: row.subcategory_name || row.subcategory || null,
+  subcategory: row.subcategory_name || row.subcategory || null,
   is_featured: !!row.is_featured,
   is_new: !!row.is_new,
   is_best_seller: !!row.is_best_seller,
@@ -93,9 +105,10 @@ const mapProductRow = (row) => ({
 const getProducts = async (filters = {}) => {
   const { whereClause, params } = buildFilterQuery(filters);
   const [rows] = await pool.query(
-    `SELECT p.*, c.name as category_name
+    `SELECT p.*, c.name as category_name, s.name as subcategory_name
      FROM products p
      LEFT JOIN categories c ON p.category_id = c.id
+     LEFT JOIN subcategories s ON p.subcategory_id = s.id
      ${whereClause}
      ORDER BY p.created_at DESC`,
     params
@@ -105,9 +118,10 @@ const getProducts = async (filters = {}) => {
 
 const getProductById = async (id) => {
   const [rows] = await pool.query(
-    `SELECT p.*, c.name as category_name
+    `SELECT p.*, c.name as category_name, s.name as subcategory_name
      FROM products p
      LEFT JOIN categories c ON p.category_id = c.id
+     LEFT JOIN subcategories s ON p.subcategory_id = s.id
      WHERE p.id = ?`,
     [id]
   );
@@ -119,6 +133,7 @@ const createProduct = async (data) => {
     name,
     description,
     subcategory,
+    subcategory_id,
     usage_notes,
     price,
     stock_quantity,
@@ -132,12 +147,13 @@ const createProduct = async (data) => {
 
   const [result] = await pool.execute(
     `INSERT INTO products 
-      (name, description, subcategory, usage_notes, price, stock_quantity, category_id, is_featured, is_new, is_best_seller, image_url, gallery_images) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (name, description, subcategory, subcategory_id, usage_notes, price, stock_quantity, category_id, is_featured, is_new, is_best_seller, image_url, gallery_images) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       name,
       description || '',
       subcategory || null,
+      subcategory_id || null,
       usage_notes || null,
       price,
       stock_quantity,
@@ -158,6 +174,7 @@ const updateProduct = async (id, data) => {
     name,
     description,
     subcategory,
+    subcategory_id,
     usage_notes,
     price,
     stock_quantity,
@@ -171,13 +188,14 @@ const updateProduct = async (id, data) => {
 
   await pool.execute(
     `UPDATE products SET 
-      name = ?, description = ?, subcategory = ?, usage_notes = ?, price = ?, stock_quantity = ?, 
+      name = ?, description = ?, subcategory = ?, subcategory_id = ?, usage_notes = ?, price = ?, stock_quantity = ?, 
       category_id = ?, is_featured = ?, is_new = ?, is_best_seller = ?, image_url = ?, gallery_images = ?
      WHERE id = ?`,
     [
       name,
       description || '',
       subcategory || null,
+      subcategory_id || null,
       usage_notes || null,
       price,
       stock_quantity,

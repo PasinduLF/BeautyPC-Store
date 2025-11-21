@@ -4,7 +4,8 @@ import ProductGrid from '../components/ProductGrid';
 import SectionTitle from '../components/SectionTitle';
 import { fetchProducts } from '../services/productService';
 import { fetchCategories } from '../services/categoryService';
-import { getCategoryMeta, getSubcategories } from '../constants/catalog';
+import { fetchSubcategories } from '../services/subcategoryService';
+import { getCategoryMeta } from '../constants/catalog';
 
 const slugify = (value = '') =>
   value
@@ -20,6 +21,7 @@ const CategoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [categoryId, setCategoryId] = useState(null);
   const [categoryLabel, setCategoryLabel] = useState('');
+  const [subcategoryOptions, setSubcategoryOptions] = useState([]);
 
   useEffect(() => {
     const querySub = searchParams.get('sub') || '';
@@ -54,6 +56,22 @@ const CategoryPage = () => {
   }, [slug]);
 
   useEffect(() => {
+    const loadSubcategories = async () => {
+      if (!categoryId) {
+        setSubcategoryOptions([]);
+        return;
+      }
+      try {
+        const response = await fetchSubcategories({ category_id: categoryId });
+        setSubcategoryOptions(response.data);
+      } catch (error) {
+        console.error('Failed to load subcategories', error);
+      }
+    };
+    loadSubcategories();
+  }, [categoryId]);
+
+  useEffect(() => {
     const loadProducts = async () => {
       if (!categoryId) return;
       setLoading(true);
@@ -61,7 +79,13 @@ const CategoryPage = () => {
         const params = { category: categoryId };
         if (filters.minPrice) params.minPrice = filters.minPrice;
         if (filters.maxPrice) params.maxPrice = filters.maxPrice;
-        if (filters.subcategory) params.subcategory = filters.subcategory;
+        if (filters.subcategory) {
+          if (!Number.isNaN(Number(filters.subcategory))) {
+            params.subcategoryId = filters.subcategory;
+          } else {
+            params.subcategory = filters.subcategory;
+          }
+        }
         const response = await fetchProducts(params);
         setProducts(response.data);
       } catch (error) {
@@ -74,7 +98,6 @@ const CategoryPage = () => {
   }, [categoryId, filters.minPrice, filters.maxPrice, filters.subcategory]);
 
   const categoryMeta = useMemo(() => getCategoryMeta(slug), [slug]);
-  const subcategoryOptions = useMemo(() => getSubcategories(slug), [slug]);
 
   const handleSubcategoryChange = (value) => {
     setFilters((prev) => ({ ...prev, subcategory: value }));
@@ -136,20 +159,25 @@ const CategoryPage = () => {
               >
                 All
               </button>
-              {subcategoryOptions.map((option) => (
+              {subcategoryOptions.map((option) => {
+                const optionValue = String(option.id);
+                const isActive =
+                  filters.subcategory === optionValue || filters.subcategory === option.name;
+                return (
                 <button
-                  key={option.value}
-                  type="button"
-                  className={`rounded-full border px-4 py-2 text-sm ${
-                    filters.subcategory === option.value
-                      ? 'border-brand bg-brand/10 text-brand-dark'
-                      : 'border-slate-200 text-slate-600'
-                  }`}
-                  onClick={() => handleSubcategoryChange(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
+                    key={option.id}
+                    type="button"
+                    className={`rounded-full border px-4 py-2 text-sm ${
+                      isActive
+                        ? 'border-brand bg-brand/10 text-brand-dark'
+                        : 'border-slate-200 text-slate-600'
+                    }`}
+                    onClick={() => handleSubcategoryChange(optionValue)}
+                  >
+                    {option.name}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
